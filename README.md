@@ -1,6 +1,6 @@
 # SAFE Template with LiteDB
 
-This template was created with `dotnet new safe`, and then I've replaced the in-memory storage with storage to LiteDB using [LiteDB.FSharp]().
+This template was created with `dotnet new safe`, and then I've replaced the in-memory storage with storage to LiteDB using [LiteDB.FSharp](https://github.com/Zaid-Ajaj/LiteDB.FSharp).
 
 I'd like to extend this additional functionality (e.g., delete records, login screen). 
 

@@ -2,6 +2,7 @@ namespace Shared
 
 open System
 
+[<CLIMutable>]
 type Todo =
     { Id : Guid
       Description : string }

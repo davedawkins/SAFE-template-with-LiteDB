@@ -1,4 +1,12 @@
-# SAFE Template
+# SAFE Template with LiteDB
+
+This template was created with `dotnet new safe`, and then I've replaced the in-memory storage with storage to LiteDB using [LiteDB.FSharp](https://github.com/Zaid-Ajaj/LiteDB.FSharp).
+
+I'd like to extend this additional functionality (e.g., delete records, login screen). 
+
+Original template documentation follows:
+
+----
 This template can be used to generate a full-stack web application using the [SAFE Stack](https://safe-stack.github.io/). It was created using the dotnet [SAFE Template](https://safe-stack.github.io/docs/template-overview/). If you want to learn more about the template why not start with the [quick start](https://safe-stack.github.io/docs/quickstart/) guide?
 
 ## Install pre-requisites
@@ -38,4 +46,4 @@ You will find more documentation about the used F# components at the following p
 
 * [Saturn](https://saturnframework.org/docs/)
 * [Fable](https://fable.io/docs/)
-* [Elmish](https://elmish.github.io/elmish/)# SAFE-template-with-LiteDB
+* [Elmish](https://elmish.github.io/elmish/)

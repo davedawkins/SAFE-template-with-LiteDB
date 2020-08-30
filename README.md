@@ -46,4 +46,4 @@ You will find more documentation about the used F# components at the following p
 
 * [Saturn](https://saturnframework.org/docs/)
 * [Fable](https://fable.io/docs/)
-* [Elmish](https://elmish.github.io/elmish/)# SAFE-template-with-LiteDB
+* [Elmish](https://elmish.github.io/elmish/)

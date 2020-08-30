@@ -51,7 +51,7 @@ type Storage (db : LiteDatabase) =
 let storage = Storage(createDatabase)
 ```
 
-- Implement `Environment.databaseFilePath` based on code from []()
+- Implement `Environment.databaseFilePath` based on code from [tabula-rasa](https://github.com/Zaid-Ajaj/tabula-rasa)
 
 ```fs
 (* 

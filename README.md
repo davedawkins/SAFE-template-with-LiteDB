@@ -13,7 +13,7 @@ type Todo =
       Description : string }
 ```
 
-- Add `LiteDB.FSharp` to `paket.references
+- Add `LiteDB.FSharp` to `paket.references`
 - Add `nuget LiteDB.FSharp` to `paket.dependencies`
 
 - Open `LiteDB.FSharp` in `Server.cs`

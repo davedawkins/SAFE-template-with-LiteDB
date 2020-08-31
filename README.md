@@ -1,6 +1,91 @@
 # SAFE Template with LiteDB
 
-This template was created with `dotnet new safe`, and then I've replaced the in-memory storage with storage to LiteDB using [LiteDB.FSharp](https://github.com/Zaid-Ajaj/LiteDB.FSharp).
+This template was created with `dotnet new safe`, and then I've replaced the in-memory storage with `LiteDB` using [LiteDB.FSharp](https://github.com/Zaid-Ajaj/LiteDB.FSharp).
+
+## Main Changes
+
+- Add `[<CliMutable>]` to `type Todo`. This attribute effectively makes the type serializable (adds default ctor, getters and setters).
+
+```fs
+[<CLIMutable>]
+type Todo =
+    { Id : Guid
+      Description : string }
+```
+
+- Add `LiteDB.FSharp` to `paket.references`
+- Add `nuget LiteDB.FSharp` to `paket.dependencies`
+
+- Open `LiteDB.FSharp` in `Server.cs`
+
+```fs
+open LiteDB.FSharp
+open LiteDB
+```
+
+- Instantiate `LiteDB` with function `createDatabase`
+
+```fs
+let createDatabase =
+    let mapper = FSharpBsonMapper()
+    let dbFile = Environment.databaseFilePath
+    let connStr = sprintf "Filename=%s;mode=Exclusive" dbFile
+    new LiteDatabase( connStr, mapper )
+```
+
+- Modify `Storage` to take `db` as constructor argument, and this is for insertions and queries
+
+```fs
+type Storage (db : LiteDatabase) =
+    let todos = db.GetCollection<Todo> "todos"
+
+    member __.GetTodos () =
+        todos.FindAll() |> List.ofSeq
+
+    member __.AddTodo (todo: Todo) =
+        if Todo.isValid todo.Description then
+            todos.Insert(todo) |> ignore
+            Ok ()
+        else Error "Invalid todo"
+
+let storage = Storage(createDatabase)
+```
+
+- Implement `Environment.databaseFilePath` based on code from [tabula-rasa](https://github.com/Zaid-Ajaj/tabula-rasa)
+
+```fs
+(* 
+ * Based on Server/Environment.fs from https://github.com/Zaid-Ajaj/tabula-rasa
+ *)
+module Environment
+
+open System.IO
+
+let (</>) x y = Path.Combine(x, y)
+
+/// The path of the directory that holds the data of the application such as the database file, the config files and files concerning security keys.
+let dataFolder =
+    let appDataFolder = System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData)
+    let folder = appDataFolder </> "safe-todo"
+    let directoryInfo = DirectoryInfo(folder)
+    if not directoryInfo.Exists then Directory.CreateDirectory folder |> ignore
+    printfn "Using data folder: %s" folder
+    folder
+
+/// The path of database file
+let databaseFilePath = dataFolder </> "Todo.db"
+```
+
+- Initialize the database first time only
+```fs
+if List.isEmpty (storage.GetTodos()) then
+    storage.AddTodo(Todo.create "Create new SAFE project") |> ignore
+    storage.AddTodo(Todo.create "Write your app") |> ignore
+    storage.AddTodo(Todo.create "Ship it !!!") |> ignore
+```
+
+
+This is what I consider to be the bare minimum to bring `LiteDB` into the template.
 
 I'd like to extend this additional functionality (e.g., delete records, login screen). 
 

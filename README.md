@@ -38,7 +38,7 @@ let database dbName =
     new LiteDatabase( connStr, mapper )
 ```
 
-- Modify `Storage` to take `db` as constructor argument, and this is for insertions and queries
+- Modify `Storage` to take `db` as constructor argument, used for insertions and queries
 - Initialize database upon first creation
 
 ```fs
@@ -83,7 +83,7 @@ let webApp =
     |> Remoting.buildHttpHandler
 ```
     
-This is what I consider to be the bare minimum to bring `LiteDB` into the template.
+This is what I consider to be the bare minimum to bring `LiteDB` into the template idiomatically.
 
 I'd like to extend this additional functionality (e.g., delete records, login screen). 
 

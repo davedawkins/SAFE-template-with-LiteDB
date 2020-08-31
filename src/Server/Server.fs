@@ -8,14 +8,21 @@ open LiteDB
 
 open Shared
 
-let createDatabase =
+let database dbName =
     let mapper = FSharpBsonMapper()
-    let dbFile = Environment.databaseFilePath
+    let dbFile = sprintf "%s.db" dbName
     let connStr = sprintf "Filename=%s;mode=Exclusive" dbFile
     new LiteDatabase( connStr, mapper )
 
-type Storage (db : LiteDatabase) =
-    let todos = db.GetCollection<Todo> "todos"
+type Storage (db : LiteDatabase) as this =
+    let collection = "todos"
+    let todos = db.GetCollection<Todo> collection
+
+    do
+        if not (db.CollectionExists collection) then
+            this.AddTodo(Todo.create "Create new SAFE project") |> ignore
+            this.AddTodo(Todo.create "Write your app") |> ignore
+            this.AddTodo(Todo.create "Ship it !!!") |> ignore
 
     member __.GetTodos () =
         todos.FindAll() |> List.ofSeq
@@ -26,14 +33,7 @@ type Storage (db : LiteDatabase) =
             Ok ()
         else Error "Invalid todo"
 
-let storage = Storage(createDatabase)
-
-if List.isEmpty (storage.GetTodos()) then
-    storage.AddTodo(Todo.create "Create new SAFE project") |> ignore
-    storage.AddTodo(Todo.create "Write your app") |> ignore
-    storage.AddTodo(Todo.create "Ship it !!!") |> ignore
-
-let todosApi =
+let todosApi (storage : Storage) =
     { getTodos = fun () -> async { return storage.GetTodos() }
       addTodo =
         fun todo -> async {
@@ -45,7 +45,7 @@ let todosApi =
 let webApp =
     Remoting.createApi()
     |> Remoting.withRouteBuilder Route.builder
-    |> Remoting.fromValue todosApi
+    |> Remoting.fromValue (database "Todo" |> Storage |> todosApi)
     |> Remoting.buildHttpHandler
 
 let app =

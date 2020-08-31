@@ -2,6 +2,11 @@
 
 This template was created with `dotnet new safe`, and then I've replaced the in-memory storage with `LiteDB` using [LiteDB.FSharp](https://github.com/Zaid-Ajaj/LiteDB.FSharp).
 
+## Revisions
+
+- Add suggestions from @IsaacAbraham
+- Eliminate global instance of `Storage`
+
 ## Main Changes
 
 - Add `[<CliMutable>]` to `type Todo`. This attribute effectively makes the type serializable (adds default ctor, getters and setters).
@@ -23,21 +28,29 @@ open LiteDB.FSharp
 open LiteDB
 ```
 
-- Instantiate `LiteDB` with function `createDatabase`
+- Instantiate `LiteDB` with function `database`
 
 ```fs
-let createDatabase =
+let database dbName =
     let mapper = FSharpBsonMapper()
-    let dbFile = Environment.databaseFilePath
+    let dbFile = sprintf "%s.db" dbName
     let connStr = sprintf "Filename=%s;mode=Exclusive" dbFile
     new LiteDatabase( connStr, mapper )
 ```
 
-- Modify `Storage` to take `db` as constructor argument, and this is for insertions and queries
+- Modify `Storage` to take `db` as constructor argument, used for insertions and queries
+- Initialize database upon first creation
 
 ```fs
-type Storage (db : LiteDatabase) =
-    let todos = db.GetCollection<Todo> "todos"
+type Storage (db : LiteDatabase) as this =
+    let collection = "todos"
+    let todos = db.GetCollection<Todo> collection
+
+    do 
+        if not (db.CollectionExists collection) then
+            this.AddTodo(Todo.create "Create new SAFE project") |> ignore
+            this.AddTodo(Todo.create "Write your app") |> ignore
+            this.AddTodo(Todo.create "Ship it !!!") |> ignore
 
     member __.GetTodos () =
         todos.FindAll() |> List.ofSeq
@@ -47,45 +60,30 @@ type Storage (db : LiteDatabase) =
             todos.Insert(todo) |> ignore
             Ok ()
         else Error "Invalid todo"
-
-let storage = Storage(createDatabase)
 ```
 
-- Implement `Environment.databaseFilePath` based on code from [tabula-rasa](https://github.com/Zaid-Ajaj/tabula-rasa)
-
-```fs
-(* 
- * Based on Server/Environment.fs from https://github.com/Zaid-Ajaj/tabula-rasa
- *)
-module Environment
-
-open System.IO
-
-let (</>) x y = Path.Combine(x, y)
-
-/// The path of the directory that holds the data of the application such as the database file, the config files and files concerning security keys.
-let dataFolder =
-    let appDataFolder = System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData)
-    let folder = appDataFolder </> "safe-todo"
-    let directoryInfo = DirectoryInfo(folder)
-    if not directoryInfo.Exists then Directory.CreateDirectory folder |> ignore
-    printfn "Using data folder: %s" folder
-    folder
-
-/// The path of database file
-let databaseFilePath = dataFolder </> "Todo.db"
+- API instance takes `Storage` as an argument
+```
+let todosApi (storage : Storage) =
+    { getTodos = fun () -> async { return storage.GetTodos() }
+      addTodo =
+        fun todo -> async {
+            match storage.AddTodo todo with
+            | Ok () -> return todo
+            | Error e -> return failwith e
+        } }
 ```
 
-- Initialize the database first time only
-```fs
-if List.isEmpty (storage.GetTodos()) then
-    storage.AddTodo(Todo.create "Create new SAFE project") |> ignore
-    storage.AddTodo(Todo.create "Write your app") |> ignore
-    storage.AddTodo(Todo.create "Ship it !!!") |> ignore
+- Pass `Storage` instance to API 
 ```
-
-
-This is what I consider to be the bare minimum to bring `LiteDB` into the template.
+let webApp =
+    Remoting.createApi()
+    |> Remoting.withRouteBuilder Route.builder
+    |> Remoting.fromValue (database "Todo" |> Storage |> todosApi)
+    |> Remoting.buildHttpHandler
+```
+    
+This is what I consider to be the bare minimum to bring `LiteDB` into the template idiomatically.
 
 I'd like to extend this additional functionality (e.g., delete records, login screen). 
 
